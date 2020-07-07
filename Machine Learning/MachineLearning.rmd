@@ -928,13 +928,231 @@ print("training set:", X_train.shape, y_train.shape)
 print("test set:", X_test.shape, y_test.shape)
 ```
 
+Building a Scikit-learn Model Using a Training Set
 
+Now that we know how to split our data into a training set and a test set, we need to modify how we build and evaluate the model. All of the model building is done with the training set and all of the evaluation is done with the test set.
 
+In the last module, we built a model and evaluated it on the same dataset. Now we build the model using the training set.
+model = LogisticRegression()
+model.fit(X_train, y_train)
 
+And we evaluate the model using the test set.
+print(model.score(X_test, y_test))
 
+In fact, all of the metrics we calculate in the previous parts should be calculated on the test set.
+y_pred = model.predict(X_test)
+print("accuracy:", accuracy_score(y_test, y_pred))
+print("precision:", precision_score(y_test, y_pred))
+print("recall:", recall_score(y_test, y_pred))
+print("f1 score:", f1_score(y_test, y_pred))
 
+```{python}
+model = LogisticRegression()
+model.fit(X_train, y_train)
 
+print(model.score(X_test, y_test))
 
+y_pred = model.predict(X_test)
+print("accuracy:", accuracy_score(y_test, y_pred))
+print("precision:", precision_score(y_test, y_pred))
+print("recall:", recall_score(y_test, y_pred))
+print("f1 score:", f1_score(y_test, y_pred))
+```
+
+Using a Random State
+
+As we noticed in the previous part, when we randomly split the data into a training set and a test set, we end up with different datapoints in each set each time we run the code. This is a result of randomness, and we need it to be random for it to be effective, but this can sometimes make it difficult to test the code.
+
+For example, each time we run the following code, we will get different results.
+from sklearn.model_selection import train_test_split
+
+X = [[1, 1], [2, 2], [3, 3], [4, 4]]
+y = [0, 0, 1, 1]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y)
+print('X_train', X_train)
+print('X_test', X_test)
+
+```{python}
+from sklearn.model_selection import train_test_split
+
+X = [[1, 1], [2, 2], [3, 3], [4, 4]]
+y = [0, 0, 1, 1]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y)
+print('X_train', X_train)
+print('X_test', X_test)
+```
+
+To get the same split every time, we can use the random_state attribute. We choose an arbitrary number to give it, and then every time we run the code, we will get the same split.
+from sklearn.model_selection import train_test_split
+
+X = [[1, 1], [2, 2], [3, 3], [4, 4]]
+y = [0, 0, 1, 1]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=27)
+print('X_train', X_train)
+print('X_test', X_test)
+
+```{python}
+from sklearn.model_selection import train_test_split
+
+X = [[1, 1], [2, 2], [3, 3], [4, 4]]
+y = [0, 0, 1, 1]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=27)
+print('X_train', X_train)
+print('X_test', X_test)
+```
+
+Precision = TP / (TP + FP) 
+  #we want a low amount false positives
+Sensitivity = Recall = TP / (TP + FN) 
+  #we want a low amount of false negatives
+Specificity = TN / (TN + FP)
+  #we want to catch the true negatives
+Accuracy = (TP + TN) / total Cases 
+  #we want a low amount of wrong predictions
+
+Goal: Max Sensitivity and Specificity
+
+Sensitivity & Specificity in Scikit-learn
+
+Scikit-learn has not defined functions for sensitivity and specificity, but we can do it ourselves. Sensitivity is the same as recall, so it is easy to define.
+from sklearn.metrics import recall_score
+sensitivity_score = recall_score
+print(sensitivity_score(y_test, y_pred)) 
+# 0.6829268292682927
+
+Now, to define specificity, if we realize that it is also the recall of the negative class, we can get the value from the sklearn function precision_recall_fscore_support.
+
+Let’s look at the output of precision_recall_fscore_support.
+from sklearn.metrics import precision_recall_fscore_support
+print(precision_recall_fscore_support(y, y_pred))
+
+The second array is the recall, so we can ignore the other three arrays. There are two values. The first is the recall of the negative class and the second is the recall of the positive class. The second value is the standard recall or sensitivity value, and you can see the value matches what we got above. The first value is the specificity. So let’s write a function to get just that value.
+def specificity_score(y_true, y_pred):
+    p, r, f, s = precision_recall_fscore_support(y_true, y_pred)
+    return r[0]
+print(specificity_score(y_test, y_pred)) 
+# 0.9214285714285714
+
+Note that in the code sample we use a random state in the train test split so that every time you run the code you will get the same results.
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import recall_score, precision_recall_fscore_support
+
+sensitivity_score = recall_score
+def specificity_score(y_true, y_pred):
+    p, r, f, s = precision_recall_fscore_support(y_true, y_pred)
+    return r[0]
+
+df = pd.read_csv('https://sololearn.com/uploads/files/titanic.csv')
+df['male'] = df['Sex'] == 'male'
+X = df[['Pclass', 'male', 'Age', 'Siblings/Spouses', 'Parents/Children', 'Fare']].values
+y = df['Survived'].values
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=5)
+
+model = LogisticRegression()
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+
+print("sensitivity:", sensitivity_score(y_test, y_pred))
+print("specificity:", specificity_score(y_test, y_pred))
+
+```{python}
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import recall_score, precision_recall_fscore_support
+
+sensitivity_score = recall_score
+def specificity_score(y_true, y_pred):
+    p, r, f, s = precision_recall_fscore_support(y_true, y_pred)
+    return r[0]
+
+df = pd.read_csv('titanic.csv')
+df['male'] = df['Sex'] == 'male'
+X = df[['Pclass', 'male', 'Age', 'Siblings/Spouses', 'Parents/Children', 'Fare']].values
+y = df['Survived'].values
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=5)
+
+model = LogisticRegression()
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+
+print("sensitivity:", sensitivity_score(y_test, y_pred))
+print("specificity:", specificity_score(y_test, y_pred))
+```
+
+Adjusting the Logistic Regression Threshold in Sklearn
+
+When you use scikit-learn’s predict method, you are given 0 and 1 values of the prediction. However, behind the scenes the Logistic Regression model is getting a probability value between 0 and 1 for each datapoint and then rounding to either 0 or 1. If we want to choose a different threshold besides 0.5, we’ll want those probability values. We can use the predict_proba function to get them.
+(model.predict_proba(X_test)
+
+The result is a numpy array with 2 values for each datapoint (e.g. [0.78, 0.22]). You’ll notice that the two values sum to 1. The first value is the probability that the datapoint is in the 0 class (didn’t survive) and the second is the probability that the datapoint is in the 1 class (survived). We only need the second column of this result, which we can pull with the following numpy syntax.
+model.predict_proba(X_test)[:, 1]
+
+Now we just want to compare these probability values with our threshold. Say we want a threshold of 0.75. We compare the above array to 0.75. This will give us an array of True/False values which will be our array of predicted target values.
+y_pred = model.predict_proba(X_test)[:, 1] > 0.75
+
+A threshold of 0.75 means we need to be more confident in order to make a positive prediction. This results in fewer positive predictions and more negative predictions.
+
+Now we can use any scikit-learn metrics from before using y_test as our true values and y_pred as our predicted values.
+print("precision:", precision_score(y_test, y_pred))
+print("recall:", recall_score(y_test, y_pred))
+
+Run this code to see the results:
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import precision_score, recall_score
+from sklearn.model_selection import train_test_split
+
+df = pd.read_csv('https://sololearn.com/uploads/files/titanic.csv')
+df['male'] = df['Sex'] == 'male'
+X = df[['Pclass', 'male', 'Age', 'Siblings/Spouses', 'Parents/Children', 'Fare']].values
+y = df['Survived'].values
+
+X_train, X_test, y_train, y_test = train_test_split(X, y)
+
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+print("predict proba:")
+print(model.predict_proba(X_test))
+
+y_pred = model.predict_proba(X_test)[:, 1] > 0.75
+
+print("precision:", precision_score(y_test, y_pred))
+print("recall:", recall_score(y_test, y_pred))
+
+```{python}
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import precision_score, recall_score
+from sklearn.model_selection import train_test_split
+
+df = pd.read_csv('titanic.csv')
+df['male'] = df['Sex'] == 'male'
+X = df[['Pclass', 'male', 'Age', 'Siblings/Spouses', 'Parents/Children', 'Fare']].values
+y = df['Survived'].values
+
+X_train, X_test, y_train, y_test = train_test_split(X, y)
+
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+print("predict proba:")
+print(model.predict_proba(X_test))
+
+y_pred = model.predict_proba(X_test)[:, 1] > 0.75
+
+print("precision:", precision_score(y_test, y_pred))
+print("recall:", recall_score(y_test, y_pred))
+```
 
 
 
