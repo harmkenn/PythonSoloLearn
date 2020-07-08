@@ -1154,11 +1154,228 @@ print("precision:", precision_score(y_test, y_pred))
 print("recall:", recall_score(y_test, y_pred))
 ```
 
+How to Build an ROC Curve
+
+The ROC curve is a graph of the specificity vs the sensitivity. We build a Logistic Regression model and then calculate the specificity and sensitivity for every possible threshold. Every predicted probability is a threshold. If we have 5 datapoints with the following predicted probabilities: 0.3, 0.4, 0.6, 0.7, 0.8, we would use each of those 5 values as a threshold.
+
+Note that we actually plot the sensitivity vs (1-specificity). There is no strong reason for doing it this way besides that it’s the standard.
+
+Let’s start by looking at the code to build the ROC curve. Scikit-learn has a roc_curve function we can use. The function takes the true target values and the predicted probabilities from our model.
+
+We first use the predict_proba method on the model to get the probabilities. Then we call the roc_curve function. The roc_curve function returns an array of the false positive rates, an array of the true positive rates and the thresholds. The false positive rate is 1-specificity (x-axis) and the true positive rate is another term for the sensitivity (y-axis). The threshold values won’t be needed in the graph.
+
+Here’s the code for plotting the ROC curve in matplotlib. Note that we also have code for plotting a diagonal line. This can help us visually see how far our model is from a model that predicts randomly.
+
+We assume that we already have a dataset that has been split into a training set and test set.
+model = LogisticRegression()
+model.fit(X_train, y_train)
+y_pred_proba = model.predict_proba(X_test)
+fpr, tpr, thresholds = roc_curve(y_test, y_pred_proba[:,1])
+
+plt.plot(fpr, tpr)
+plt.plot([0, 1], [0, 1], linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.0])
+plt.xlabel('1 - specificity')
+plt.ylabel('sensitivity')
+plt.show()
+
+```{python}
+from sklearn import metrics
+model = LogisticRegression()
+model.fit(X_train, y_train)
+y_pred_proba = model.predict_proba(X_test)
+fpr, tpr, thresholds = metrics.roc_curve(y_test, y_pred_proba[:,1])
+
+plt.plot(fpr, tpr)
+plt.plot([0, 1], [0, 1], linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.0])
+plt.xlabel('1 - specificity')
+plt.ylabel('sensitivity')
+plt.show()
+```
+
+Maximize true negatives (Specificity)
+Maximize true positives (Sensitivity)
+
+Area Under the Curve
+
+We’ll sometimes what to use the ROC curve to compare two different models. Here is a comparison of the ROC curves of two models.
 
 
+You can see that the blue curve outperforms the orange one since the blue line is almost always above the orange line.
+
+To get an empirical measure of this, we calculate the Area Under the Curve, also called the AUC. This is the area under the ROC curve. It’s a value between 0 and 1, the higher the better.
+
+Since the ROC is a graph of all the different Logistic Regression models with different thresholds, the AUC does not measure the performance of a single model. It gives a general sense of how well the Logistic Regression model is performing. To get a single model, you still need to find the optimal threshold for your problem.
+
+Let’s use scikit-learn to help us calculate the area under the curve. We can use the roc_auc_score function.
+(roc_auc_score(y_test, y_pred_proba[:,1]) 
+
+Here are the values for the two lines:
+Blue AUC: 0.8379
+Orange AUC: 0.7385
+
+You can see empirically that the blue is better.
+
+We can use the roc_auc_score function to calculate the AUC score of a Logistic Regression model on the Titanic dataset. We build two Logistic Regression models, model1 with 6 features and model2 with just Pclass and male features. We see that the AUC score of model1 is higher.
+
+Run this code to see the results:
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_auc_score
+
+df = pd.read_csv('https://sololearn.com/uploads/files/titanic.csv')
+df['male'] = df['Sex'] == 'male'
+X = df[['Pclass', 'male', 'Age', 'Siblings/Spouses', 'Parents/Children', 'Fare']].values
+y = df['Survived'].values
+
+X_train, X_test, y_train, y_test = train_test_split(X, y)
+
+model1 = LogisticRegression()
+model1.fit(X_train, y_train)
+y_pred_proba1 = model1.predict_proba(X_test)
+print("model 1 AUC score:", roc_auc_score(y_test, y_pred_proba1[:, 1]))
+
+model2 = LogisticRegression()
+model2.fit(X_train[:, 0:2], y_train)
+y_pred_proba2 = model2.predict_proba(X_test[:, 0:2])
+print("model 1 AUC score:", roc_auc_score(y_test, y_pred_proba2[:, 1]))
+
+```{python}
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_auc_score
+
+df = pd.read_csv('titanic.csv')
+df['male'] = df['Sex'] == 'male'
+X = df[['Pclass', 'male', 'Age', 'Siblings/Spouses', 'Parents/Children', 'Fare']].values
+y = df['Survived'].values
+
+X_train, X_test, y_train, y_test = train_test_split(X, y)
+
+model1 = LogisticRegression()
+model1.fit(X_train, y_train)
+y_pred_proba1 = model1.predict_proba(X_test)
+print("model 1 AUC score:", roc_auc_score(y_test, y_pred_proba1[:, 1]))
+
+model2 = LogisticRegression()
+model2.fit(X_train[:, 0:2], y_train)
+y_pred_proba2 = model2.predict_proba(X_test[:, 0:2])
+print("model 1 AUC score:", roc_auc_score(y_test, y_pred_proba2[:, 1]))
+```
+
+Concerns with Training and Test Set
+
+We are doing evaluation because we want to get an accurate measure of how well the model performs. If our dataset is small, our test set is going to be small. Thus it might not be a good random assortment of datapoints and by random chance end up with easy or difficult datapoints in our evaluation set.
+
+Since our goal is to get the best possible measure of our metrics (accuracy, precision, recall and F1 score), we can do a little better than just a single training and test set.
+
+Recall that our training and test set split looks as follows.
 
 
+As we can see, all the values in the training set are never used to evaluate. It would be unfair to build the model with the training set and then evaluate with the training set, but we are not getting as full a picture of the model performance as possible.
 
+To see this empirically, let’s try running the code from Lesson 3 which does a train/test split. We’ll re-run it a few times and see the results. Each row is the result of a different random train/test split.
+
+
+You can see that each time we run it, we get different values for the metrics. The accuracy ranges from 0.79 to 0.84, the precision from 0.75 to 0.81 and the recall from 0.63 to 0.75. These are wide ranges that just depend on how lucky or unlucky we were in which datapoints ended up in the test set.
+
+Here’s the code if you want to try running yourself and seeing the varying values of the metrics.
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.model_selection import train_test_split
+import numpy as np
+
+df = pd.read_csv('https://sololearn.com/uploads/files/titanic.csv')
+df['male'] = df['Sex'] == 'male'
+X = df[['Pclass', 'male', 'Age', 'Siblings/Spouses', 'Parents/Children', 'Fare']].values
+y = df['Survived'].values
+
+X_train, X_test, y_train, y_test = train_test_split(X, y)
+
+# building the model
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# evaluating the model
+y_pred = model.predict(X_test)
+print(" accuracy: {0:.5f}".format(accuracy_score(y_test, y_pred)))
+print("precision: {0:.5f}".format(precision_score(y_test, y_pred)))
+print("   recall: {0:.5f}".format(recall_score(y_test, y_pred)))
+print(" f1 score: {0:.5f}".format(f1_score(y_test, y_pred)))
+
+```{python}
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.model_selection import train_test_split
+import numpy as np
+
+df = pd.read_csv('https://sololearn.com/uploads/files/titanic.csv')
+df['male'] = df['Sex'] == 'male'
+X = df[['Pclass', 'male', 'Age', 'Siblings/Spouses', 'Parents/Children', 'Fare']].values
+y = df['Survived'].values
+
+X_train, X_test, y_train, y_test = train_test_split(X, y)
+
+# building the model
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# evaluating the model
+y_pred = model.predict(X_test)
+print(" accuracy: {0:.5f}".format(accuracy_score(y_test, y_pred)))
+print("precision: {0:.5f}".format(precision_score(y_test, y_pred)))
+print("   recall: {0:.5f}".format(recall_score(y_test, y_pred)))
+print(" f1 score: {0:.5f}".format(f1_score(y_test, y_pred)))
+```
+
+KFold Class
+
+Scikit-learn has already implemented the code to break the dataset into k chunks and create k training and test sets.
+
+For simplicity, let’s take a dataset with just 6 datapoints and 2 features and a 3-fold cross validation on the dataset. We’ll take the first 6 rows from the Titanic dataset and use just the Age and Fare columns.
+X = df[['Age', 'Fare']].values[:6]
+y = df['Survived'].values[:6]
+
+We start by instantiating a KFold class object. It takes two parameters: n_splits (this is k, the number of chunks to create) and shuffle (whether or not to randomize the order of the data). It’s generally good practice to shuffle the data since you often get a dataset that’s in a sorted order.
+kf = KFold(n_splits=3, shuffle=True)
+
+The KFold class has a split method that creates the 3 splits for our data.
+
+Let’s look at the output of the split method. The split method returns a generator, so we use the list function to turn it into a list.
+list(kf.split(X))
+
+Result:
+from sklearn.model_selection import KFold
+import pandas as pd
+
+df = pd.read_csv('https://sololearn.com/uploads/files/titanic.csv')
+X = df[['Age', 'Fare']].values[:6]
+y = df['Survived'].values[:6]
+
+kf = KFold(n_splits=3, shuffle=True)
+for train, test in kf.split(X):
+    print(train, test)
+    
+```{python}
+from sklearn.model_selection import KFold
+import pandas as pd
+
+df = pd.read_csv('titanic.csv')
+X = df[['Age', 'Fare']].values[:6]
+y = df['Survived'].values[:6]
+
+kf = KFold(n_splits=3, shuffle=True)
+for train, test in kf.split(X):
+    print(train, test)
+
+```
 
 
 
