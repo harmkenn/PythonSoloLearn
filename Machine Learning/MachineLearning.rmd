@@ -2120,6 +2120,419 @@ Why should we perform feature selection? Top reasons are: it enables us to train
 
 In our dataset, we happen to notice that features with "worst" seem to have higher importances. As a result we are going to build a new model with the selected features and see if it improves accuracy. Recall the model from the last part.
 
+```{python}
+rf = RandomForestClassifier(n_estimators=10, random_state=111)
+rf.fit(X_train, y_train)
+rf.score(X_test, y_test)
+# 0.965034965034965
+```
+
+We first find the features whose names include the word "worst":
+
+```{python}
+worst_cols = [col for col in df.columns if 'worst' in col]
+print(worst_cols)
+```
+
+There are ten such features. Now we create another dataframe with the selected features, followed by a train test split with the same random state.
+
+```{python}
+X_worst = df[worst_cols]
+X_train, X_test, y_train, y_test = train_test_split(X_worst, y, random_state=101)
+```
+
+Fit the model and output the accuracy.
+
+```{python}
+rf.fit(X_train, y_train)
+rf.score(X_test, y_test)
+# 0.972027972027972
+```
+
+Here we are able to improve the accuracy using a subset of features, a third of the total features to be exact. This is because we removed some noise and highly correlated features, resulting in an increased accuracy. The advantage of building a better model using less features will be more pronounced when the sample size is large.
+
+Performance
+
+Probably the biggest advantage of Random Forests is that they generally perform well without any tuning. They will also perform decently well on almost every dataset.
+
+A linear model, for example, cannot perform well on a dataset that cannot be split with a line. It is not possible to split the following dataset with a line without manipulating the features. However, a random forest will perform just fine on this dataset.
+
+We can see this by looking at the code to generate the fake dataset above and comparing a Logistic Regression model with a Random Forest model. The function make_circles makes a classification dataset with concentric circles. We use kfold cross validation to compare the accuracy scores and see that the Logistic Regression model performs worse than random guessing but the Random Forest model performs quite well.
+
+```{python}
+from sklearn.datasets import make_circles
+from sklearn.model_selection import KFold
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+import numpy as np
+
+X, y = make_circles(noise=0.2, factor=0.5, random_state=1)
+
+kf = KFold(n_splits=5, shuffle=True, random_state=1)
+lr_scores = []
+rf_scores = []
+for train_index, test_index in kf.split(X):
+    X_train, X_test = X[train_index], X[test_index]
+    y_train, y_test = y[train_index], y[test_index]
+    lr = LogisticRegression(solver='lbfgs')
+    lr.fit(X_train, y_train)
+    lr_scores.append(lr.score(X_test, y_test))
+    rf = RandomForestClassifier(n_estimators=100)
+    rf.fit(X_train, y_train)
+    rf_scores.append(rf.score(X_test, y_test))
+print("LR accuracy:", np.mean(lr_scores))
+print("RF accuracy:", np.mean(rf_scores))
+```
+
+# Neural Network
+
+Creating Artificial Dataset
+
+Sometimes in order to test models, it is helpful to create an artificial dataset. We can create a dataset of the size and complexity needed. Thus we can make a dataset that is easier to work with than a real life dataset. This can help us understand how models work before we apply them to messy real world data.
+
+We will use the make_classification function in scikit-learn. It generates a feature matrix X and target array y. We will give it these parameters:
+
+• n_samples: number of datapoints
+• n_features: number of features
+• n_informative: number of informative features
+• n_redundant: number of redundant features
+• random_state: random state to guarantee same result every time
+
+You can look at the full documentation to see other parameters that you can tweak to change the result.
+
+Here is the code to generate a dataset.
+
+```{python}
+from sklearn.datasets import make_classification
+X, y = make_classification(n_features=2, n_redundant=0, n_informative=2, random_state=3)
+print(X)
+print(y)
+```
+
+Here’s the code to plot the data so we can look at it visually.
+
+```{python}
+from matplotlib import pyplot as plt
+plt.cla()
+plt.scatter(X[y==0][:, 0], X[y==0][:, 1], s=100, edgecolors='k')
+plt.scatter(X[y==1][:, 0], X[y==1][:, 1], s=100, edgecolors='k', marker='^')
+plt.show()
+
+```
+
+MLPClassifier
+
+Scikit-learn has an MLPClassifier class which is a multi-layer perceptron for classification. We can import the class from scikit-learn, create an MLPClassifier object and use the fit method to train.
+
+Try it now:
+
+```{python}
+from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPClassifier
+from sklearn.datasets import make_classification
+
+X, y = make_classification(n_features=2, n_redundant=0, n_informative=2, random_state=3)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=3)
+mlp = MLPClassifier(max_iter=1000)
+mlp.fit(X_train, y_train)
+```
+
+Now when we run this code, the neural network will converge. We can now use the score method to calculate the accuracy on the test set.
+
+```{python}
+from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPClassifier
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=3)
+mlp = MLPClassifier(max_iter=1000)
+mlp.fit(X_train, y_train)
+print("accuracy:", mlp.score(X_test, y_test))
+```
+
+Parameters for MLPClassifier
+
+There are a couple of parameters that you may find yourself needing to change in the MLPClassifier.
+
+You can configure the number of hidden layers and how many nodes in each layer. The default MLPClassifier will have a single hidden layer of 100 nodes. This often works really well, but we can experiment with different values. This will create an MLPCLassifier with two hidden layers, one of 100 nodes and one of 50 nodes.
+
+```{python}
+mlp = MLPClassifier(max_iter=1000, hidden_layer_sizes=(100, 50))
+```
+
+We saw max_iter in the previous part. This is the number of iterations. In general, the more data you have, the fewer iterations you need to converge. If the value is too large, it will take too long to run the code. If the value is too small, the neural network will not converge on the optimal solution.
+
+We also sometimes need to change alpha, which is the step size. This is how much the neural network changes the coefficients at each iteration. If the value is too small, you may never converge on the optimal solution. If the value is too large, you may miss the optimal solution. Initially you can leave this at the default. The default value of alpha is 0.0001. Note that decreasing alpha often requires an increase in max_iter.
+
+Sometimes you will want to change the solver. This is what algorithm is used to find the optimal solution. All the solvers will work, but you may find for your dataset that a different solver finds the optimal solution faster. The options for solver are 'lbfgs', 'sgd' and 'adam'.
+
+Run this code in the playground and try changing the parameters for the MLPClassifier. The code uses a random_state to ensure that every time you run the code with the same parameters you will get the same output.
+
+```{python}
+from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPClassifier
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=3)
+mlp = MLPClassifier(max_iter=500, hidden_layer_sizes=(100, 50), alpha=0.0005, solver='adam', random_state=3)
+mlp.fit(X_train, y_train)
+print("accuracy:", mlp.score(X_test, y_test))
+```
+
+The MNIST Dataset
+
+In this lesson we will be working with a new dataset, the MNIST database of handwritten digits. NIST is the National Institute of Standards and Technology and the M stands for Modified.
+
+This is a database of images of handwritten digits. We will build a classifier to determine which digit is in the image.
+
+We will start with the version of the MNIST dataset that is built into scikit-learn. This has the images with only 8 by 8 pixels, so they are blurry.
+
+Here are a couple example images:
+
+In scikit-learn we can load the dataset using the load_digits function. To simplify the problem, we will initially only be working with two digits (0 and 1), so we use the n_class parameter to limit the number of target values to 2.
+
+```{python}
+from sklearn.datasets import load_digits
+X, y = load_digits(n_class=2, return_X_y=True)
+```
+
+We can see the dimensions of X and y and what the values look like as follows.
+
+```{python}
+print(X.shape, y.shape)
+print(X[0])
+print(y[0])
+```
+
+We see that we have 300 datapoints and each datapoint has 64 features. We have 64 features because the image is 8 x 8 pixels and we have 1 feature per pixel. The value is on a grayscale where 0 is black and 16 is white.
+
+To get a more intuitive view of the datapoint, reshape the array to be 8x8.
+
+```{python}
+print(X[30].reshape(8, 8))
+```
+
+We can see that this is a 0, though we will see in the next part that we can draw the image more clearly.
+
+Try it now:
+
+```{python}
+from sklearn.datasets import load_digits
+X, y = load_digits(n_class=2, return_X_y=True)
+print(X.shape, y.shape)
+print(X[0])
+print(y[0])
+print(X[0].reshape(8, 8))
+```
+
+Drawing the Digits
+
+You can build a model without ever looking at a visual representation of the images, but it can sometimes be helpful to draw the image.
+
+We use the matplotlib function matshow to draw the image. The cmap parameter is used to indicate that the image should be in a grayscale rather than colored.
+
+```{python}
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_digits
+plt.cla()
+X, y = load_digits(n_class=2, return_X_y=True)
+plt.matshow(X[0].reshape(8, 8), cmap=plt.cm.gray)
+plt.xticks(())  # remove x tick marks
+plt.yticks(())  # remove y tick marks
+plt.show()
+```
+
+MLP for MNIST Dataset
+
+Now let’s use the MLPClassifier to build a model for the MNIST dataset.
+
+We will do a train/test split and train an MLPClassifier on the training set.
+
+```{python}
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=2)
+mlp = MLPClassifier()
+mlp.fit(X_train, y_train)
+```
+
+We do not get a warning, so the default number of iterations is adequate in this case.
+
+Let’s look at how the model predicts the first datapoint in the test set. We use matplotlib to draw the images and then show the model’s prediction.
+
+```{python}
+x = X_test[0]
+plt.cla()
+plt.matshow(x.reshape(8, 8), cmap=plt.cm.gray)
+plt.xticks(())
+plt.yticks(())
+plt.show()
+print(mlp.predict([x]))
+# 0
+```
+
+We can see that this is a 0 and that our model correctly predicts 0.
+
+Similarly, let’s look at the second datapoint.
+
+```{python}
+x = X_test[30]
+plt.matshow(x.reshape(8, 8), cmap=plt.cm.gray)
+plt.xticks(())
+plt.yticks(())
+plt.show()
+print(mlp.predict([x]))
+# 1
+```
+
+This is clearly a 1 and our model again gets the correct prediction.
+
+We can also see the model’s accuracy on the entire test set.
+
+```{python}
+print(mlp.score(X_test, y_test))
+# 1.0
+```
+
+Classifying all 10 Digits
+
+Since neural networks easily generalize to handle multiple outputs, we can just use the same code to build a classifier to distinguish between all ten digits.
+
+This time when we load the digits, we do not limit the number of classes.
+
+```{python}
+X, y = load_digits(return_X_y=True)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=2)
+mlp = MLPClassifier(random_state=2)
+mlp.fit(X_train, y_train)
+
+print(mlp.score(X_test, y_test))
+# 0.96
+```
+
+So we got 96% of the datapoints in the test set correct. Let’s look at the ones we got incorrect. We use a numpy mask to pull out just the datapoints we got incorrect. We pull the x values, the true y value as well as the predicted value.
+
+```{python}
+y_pred = mlp.predict(X_test)
+incorrect = X_test[y_pred != y_test]
+incorrect_true = y_test[y_pred != y_test]
+incorrect_pred = y_pred[y_pred != y_test] 
+```
+
+Let’s look at the first image that we got wrong and what our prediction was.
+
+```{python}
+j = 2
+plt.matshow(incorrect[j].reshape(8, 8), cmap=plt.cm.gray)
+plt.xticks(())
+plt.yticks(())
+plt.show()
+print("true value:", incorrect_true[j])
+print("predicted value:", incorrect_pred[j])
+```
+
+Open ML
+
+For this lesson, we will use a more granular version of the MNIST dataset. Instead of using the version in scikit-learn which has 64 pixel images, we will use a version from Open ML that has 784 pixels (28 x 28).
+
+Open ML (www.openml.org) has a database of large datasets that can be used for a variety of machine learning problems. Scikit-learn has a function fetch_openml for directly downloading datasets from the Open ML database.
+
+Use the following code to get our dataset.
+
+```{python}
+from sklearn.datasets import fetch_openml
+X, y = fetch_openml('mnist_784', version=1, return_X_y=True)
+```
+
+We can briefly look at the shape of the arrays, the range of the features values, and the first few values of the target array to better understand the dataset.
+
+```{python}
+print(X.shape, y.shape)
+print(np.min(X), np.max(X))
+print(y[0:5])
+```
+
+We can see that we have 70,000 datapoints with 784 features. The feature values range from 0 to 255 (which we interpret on a gray scale with 0 being white and 255 being black). The target values are the numbers 0-9. Note that the target values are stored as strings and not integers.
+
+For our example, we will be using only the digits 0-3, so we can use the following code to segment out that portion of the dataset.
+
+```{python}
+X5 = X[y <= '3']
+y5 = y[y <= '3']
+```
+
+We will be modifying some of the default parameters in the MLPClassifier to build the model. Since our goal will be to visualize the weights of the hidden layer, we will use only 6 nodes in the hidden layer so that we can look at all of them. We will use 'sgd' (stochastic gradient descent) as our solver which requires us to decrease alpha (the learning rate).
+
+```{python}
+mlp=MLPClassifier(
+  hidden_layer_sizes=(6,), 
+  max_iter=200, alpha=1e-4,
+  solver='sgd', random_state=2)
+
+mlp.fit(X5, y5)
+
+```
+
+MLPClassifier Coefficients
+
+The MLPClassifier stores the coefficients in the coefs_ attribute. Let’s see what it looks like.
+
+```{python}
+print(mlp.coefs_)
+```
+
+First we see that it is a list with two elements.
+
+```{python}
+print(len(mlp.coefs_))
+```
+
+The two elements in the list correspond to the two layers: the hidden layer and the output layer. We have an array of coefficients for each of these layers. Let’s look at the shape of the coefficients for the hidden layer.
+
+```{python}
+print(mlp.coefs_[0].shape)
+
+```
+
+We see that we have a 2-dimensional array of size 784 x 6. There are 6 nodes and 784 input values feeding into each node, and we have a weight for each of these connections.
+
+Visualizing the Hidden Layer
+
+To get a better understanding of what the neural network is doing, we can visualize the weights of the hidden layer to get some insight into what each node is doing.
+
+We will use the matshow function from matplotlib again to draw the images. In matplotlib we can use the subplots function to create multiple plots within a single plot.
+
+```{python}
+import matplotlib.pyplot as plt
+
+fig, axes = plt.subplots(2, 3, figsize=(5, 4))
+for i, ax in enumerate(axes.ravel()):
+    coef = mlp.coefs_[0][:, i]
+    ax.matshow(coef.reshape(28, 28), cmap=plt.cm.gray)
+    ax.set_xticks(())
+    ax.set_yticks(())
+    ax.set_title(i + 1)
+plt.show()
+```
+
+You can see that nodes 4 and 6 are determining if the digit is a 3. Node 1 is determining if the digit is a 0 or a 2 since you can see both of those values in the image. Not every hidden node will have an obvious use.
+
+Interpretability
+
+While we can visualize the nodes in the hidden layer to understand on a high level what the neural network is doing, it is impossible to answer the question "Why did datapoint x get prediction y?" Since there are so many nodes, each with their own coefficients, it is not feasible to get a simple explanation of what the neural network is doing. This makes it a difficult model to interpret and use in certain business use cases.
+
+Computation
+
+Neural networks can take a decent amount of time to train. Each node has its own coefficients and to train they are iteratively updated, so this can be time consuming. However, they are parallelizable, so it is possible to throw computer power at them to make them train faster.
+
+Performance
+
+The main draw to neural networks is their performance. On many problems, their performance simply cannot be beat by other models. They can take some tuning of parameters to find the optimal performance, but they benefit from needing minimal feature engineering prior to building the model.
+
+A lot of simpler problems, you can achieve equivalent performance with a simpler model like logistic regression, but with large unstructured datasets, neural networks outperform other models.
+
+
+
+
+
+
+
 
 
 
