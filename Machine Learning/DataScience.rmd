@@ -138,9 +138,7 @@ heights_and_ages_arr.reshape((2,45))
 The reshaped array is now a 2darray, yet note that the original array is not changed. We can reshape an array in multiple ways, as long as the size of the reshaped array matches that of the original.
 
 ```{python}
-newP = heights_and_ages_arr.reshape((2,45))
-newP.shape
-newP
+heights_and_ages_arr = heights_and_ages_arr.reshape((2,45))
 ```
 
 Data Type
@@ -167,21 +165,131 @@ heights_float_arr
 heights_float_arr.dtype
 ```
 
+Indexing
 
+We can use array indexing to select individual elements from arrays. Like Python lists, numpy index starts from 0.
 
+To access the height of the 3rd president Thomas Jefferson in the 1darray 'heights_arr':
 
+```{python}
+heights_arr[2]
+```
 
+In a 2darray, there are two axes, axis 0 and 1. Axis 0 runs downward down the rows whereas axis 1 runs horizontally across the columns.
 
+In the 2darrary heights_and_ages_arr, recall that its dimensions are (2, 45). To find Thomas Jefferson’s age at the beginning of his presidency you would need to access the second row where ages are stored:
 
+```{python}
+heights_and_ages_arr[1,2]
+```
 
+Slicing
 
+What if we want to inspect the first three elements from the first row in a 2darray? We use ":" to select all the elements from the index up to but not including the ending index. This is called slicing.
 
+```{python}
+heights_and_ages_arr[0, 0:3]
+```
 
+When the starting index is 0, we can omit it as shown below:
 
+```{python}
+heights_and_ages_arr[0, :3]
+```
 
+What if we’d like to see the entire third column? Specify this by using a ":" as follows
 
+```{python}
+heights_and_ages_arr[:, 3]
+```
 
+Assigning Single Values
 
+Sometimes you need to change the values of particular elements in the array. For example, we noticed the fourth entry in the heights_arr was incorrect, it should be 165 instead of 163, we can re-assign the correct number by:
+
+```{python}
+heights_arr[3] = 165
+
+heights_arr
+```
+
+In a 2darray, single values can be assigned easily. You can use indexing for one element. For example, change the fourth entry in heights_arr to 165:
+
+```{python}
+heights_and_ages_arr[0, 3] = 165
+heights_and_ages_arr
+```
+
+Or we can use slicing for multiple elements. For example, to replace the first row by its mean 180 in heights_and_ages_arr:
+
+```{python}
+heights_and_ages_arr[0,:] = 180
+heights_and_ages_arr
+```
+
+We can also combine slicing to change any subset of the array. For example, to reassign 0 to the left upper corner:
+
+```{python}
+heights_and_ages_arr[:2, :2] = 0
+heights_and_ages_arr
+```
+
+Assigning an Array to an Array
+
+In addition, a 1darray or a 2darry can be assigned to a subset of another 2darray, as long as their shapes match. Recall the 2darray heights_and_ages_arr:
+
+```{python}
+heights_and_ages_arr
+```
+
+If we want to update both height and age of the first president with new data, we can supply the data in a list:
+
+```{python}
+heights_and_ages_arr[:, 0] = [190, 58]
+heights_and_ages_arr
+```
+
+We can also update data in a subarray with a numpy array as such:
+
+```{python}
+new_record = np.array([[180, 183, 190], [54, 50, 69]])
+heights_and_ages_arr[:, 42:] = new_record
+heights_and_ages_arr
+```
+
+Combining Two Arrays
+
+Oftentime we obtain data stored in different arrays and we need to combine them into one to keep it in one place. For example, instead of having the ages stored in a list, it could be stored in a 2darray:
+
+```{python}
+ages_arr.shape
+ages_arr[:3,]
+```
+
+If we reshape the heights_arr to (45,1), the same as 'ages_arr', we can stack them horizontally (by column) to get a 2darray using 'hstack':
+
+```{python}
+heights_arr = np.array(heights)
+heights_arr = heights_arr.reshape((45,1))
+ages_arr = np.array(ages)
+ages_arr = ages_arr.reshape((45,1))
+height_age_arr = np.hstack((heights_arr, ages_arr))
+height_age_arr.shape
+height_age_arr[:3,]
+```
+
+Now height_age_arr has both heights and ages for the presidents, each column corresponds to the height and age of one president.
+
+Similarly, if we want to combine the arrays vertically (by row), we can use 'vstack'.
+
+```{python}
+heights_arr = heights_arr.reshape((1,45))
+ages_arr = ages_arr.reshape((1,45))
+
+height_age_arr = np.vstack((heights_arr, ages_arr))
+height_age_arr.shape
+height_age_arr[:,:3]
+```
 
 
 
