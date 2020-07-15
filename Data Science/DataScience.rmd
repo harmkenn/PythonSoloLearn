@@ -431,11 +431,74 @@ series['a']
 
 Accessing the value by its index, rather than the integer position comes in handy when the dataset is of thousands, if not millions, of rows. Series is the building block for the DataFrame we will introduce next.
 
+DataFrames
 
+In data science, data is usually more than one-dimensional, and of different data types; thus Series is not sufficient. DataFrames are 2darrays with both row and column labels. One way to create a DataFrame from scratch is to pass in a dict. For example, this week, we sold 3 bottles of red wine to Adam, 6 to Bob, and 5 to Charles. We sold 5 bottles of white wine to Adam, 0 to Bob and 10 to Charles. We can organize the data into a DataFrame by creating a dict 'wine_dict' with the number of bottles of each wine type we sold, then pass it along with the customer names as index to create a DataFrame 'sales'.
 
+```{python}
+wine_dict = {
+  'red_wine': [3, 6, 5], 
+  'white_wine':[5, 0, 10]
+}
+sales = pd.DataFrame(wine_dict, index=["adam", "bob", "charles"])
+```
 
+Think of DataFrame as a collection of the Series. Here, sales consists of two Series, one named under "red_wine", the other "white_wine", thus, we can access each series by calling its name:
 
+```{python}
+sales['white_wine']
+```
 
+Inspect a DataFrame - Shape and Size
+
+Let’s take a look at a new DataFrame, in addition to heights and ages of the presidents, there is information on the order, names and parties. The DataFrame presidents_df is read from a CSV file as follows. Note that index is set to be the names of presidents.
+
+```{python}
+import pandas as pd
+presidents_df = pd.read_csv("president_heights_party.csv", index_col='name')
+```
+
+Similar to numpy, to get the dimensions of a DataFrame, use .shape.
+
+```{python}
+presidents_df.shape
+```
+
+There are 45 rows and 4 columns in this DataFrame. To get the number of rows we can access the first element in the tuple.
+
+```{python}
+presidents_df.shape[0]
+```
+
+Size also works on DataFrame to return an integer representing the number of elements in this object.
+
+```{python}
+presidents_df.size
+```
+
+Inspect a DataFrame - Head and Tail
+
+Instead of looking at the entire dataset, we can just take a peep. To see the first few lines in a DataFrame, use .head(); if we don’t specify n (the number of lines), by default, it displays the first five rows. Here we want to see the top 3 rows.
+
+```{python}
+presidents_df.head(n=3)
+```
+
+In presidents_df, the index is the name of the president, there are four columns: order, age, height, and party. Similarly, if we want to see the last few rows, we can use .tail(), the default is also five rows.
+
+```{python}
+presidents_df.tail()
+```
+
+Inspect a DataFrame - Info
+
+Use .info() to get an overview of the DataFrame. Its output includes index, column names, count of non-null values, dtypes, and memory usage.
+
+```{python}
+presidents_df.info()
+```
+
+The dtype for order, age, and height is integers, while party is an object. The count of non-null values in each column is the same as the number of rows, indicating no missing values.
 
 
 
